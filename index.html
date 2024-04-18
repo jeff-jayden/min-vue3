@@ -13,22 +13,46 @@
     const app1 = document.querySelector('#app1')
     const app2 = document.querySelector('#app2')
 
-    //装要回调的函数
-    const bucket = new Set()
+    //为解决设置新的值 需要回调所有的函数 资源浪费问题
+    const bucket = new WeakMap()
 
     let activeEffect
 
     const state = new Proxy({text: 'hello hyh', text2: 'hhh'}, {
         get(target, key) {
             const value = target[key]
+
+            //activeEffect无值意味着没有执行effect函数，无法收集依赖，直接return掉
+            if (!activeEffect) return
+            // 每个target在bucket中都是一个Map类型： key => effects
+            let depsMap = bucket.get(target)
+            // 第一次拦截，depsMap不存在，先创建联系
+            if (!depsMap) {
+                bucket.set(target, (depsMap = new Map()))
+            }
+            // 根据当前读取的key，尝试读取key的effects函数
+            let deps = depsMap.get(key);
+            if (!deps) {
+                // deps本质是个Set结构，即一个key可以存在多个effect函数，被多个effect所依赖
+                depsMap.set(key, (deps = new Set()))
+            }
+            // 将激活的effectFn存进桶中
+            deps.add(activeEffect)
+
             console.log(`get ${key}: ${value}`)
-            bucket.add(activeEffect)
+            console.log('add:' + deps.size)
+            console.log(deps)
             return value
         },
         set(target, key, newValue) {
             console.log(`set ${key}: ${newValue}`)
             target[key] = newValue
-            bucket.forEach(fn => fn())
+
+            const depsMap = bucket.get(target)
+            if (!depsMap) return
+
+            const effects = depsMap.get(key)
+            effects && effects.forEach(fn => fn())
         }
     })
 
@@ -39,14 +63,15 @@
     }
 
     effect(() => {
-        console.log('执行了effect1')
+        console.log('执行了effect')
         app1.innerText = state.text
-    })
-
-    effect(() => {
-        console.log('执行了effect2')
         app2.innerText = state.text2
     })
+
+    // effect(() => {
+    //     console.log('执行了effect2')
+    //
+    // })
 
     setTimeout(() => {
         state.text = 'hello vue3 1'
