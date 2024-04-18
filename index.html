@@ -8,6 +8,23 @@
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <script>
+        const app = document.querySelector('#app')
+
+        let state = {
+            text: 'hello hyh'
+        }
+
+        const effect = () => {
+            app.innerText = state.text
+        }
+
+        effect()
+
+        setTimeout(() => {
+            state.text = 'hello vue3'
+            console.log(state.text)
+        }, 1000)
+    </script>
   </body>
 </html>
