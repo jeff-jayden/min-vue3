@@ -7,18 +7,22 @@
     <title>Vite App</title>
 </head>
 <body>
-<div id="app"></div>
+<div id="app1"></div>
+<div id="app2"></div>
 <script>
-    const app = document.querySelector('#app')
+    const app1 = document.querySelector('#app1')
+    const app2 = document.querySelector('#app2')
 
     //装要回调的函数
     const bucket = new Set()
 
-    const state = new Proxy({text: 'hello hyh'}, {
+    let activeEffect
+
+    const state = new Proxy({text: 'hello hyh', text2: 'hhh'}, {
         get(target, key) {
             const value = target[key]
             console.log(`get ${key}: ${value}`)
-            bucket.add(effect)
+            bucket.add(activeEffect)
             return value
         },
         set(target, key, newValue) {
@@ -29,16 +33,24 @@
     })
 
 
-    const effect = () => {
-        console.log('执行了effect')
-        app.innerText = state.text
+    const effect = (fn) => {
+        activeEffect = fn
+        fn()
     }
 
-    effect()
+    effect(() => {
+        console.log('执行了effect1')
+        app1.innerText = state.text
+    })
+
+    effect(() => {
+        console.log('执行了effect2')
+        app2.innerText = state.text2
+    })
 
     setTimeout(() => {
-        state.text = 'hello vue3'
-        // console.log('更改后的' + state.text)
+        state.text = 'hello vue3 1'
+        state.text2 = 'hello vue3 2'
     }, 1000)
 </script>
 </body>
